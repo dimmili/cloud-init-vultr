@@ -12,9 +12,9 @@ wget https://raw.githubusercontent.com/dimmili/cloud-init-vultr/master/DataSourc
 ```
 
 And add/change in your `/etc/cloud/cloud.cfg`:
-`datasource_list: [Vultr]
+```datasource_list: [Vultr]
 
 datasource:
   Vultr:
     timeout: 1
-`
+```
