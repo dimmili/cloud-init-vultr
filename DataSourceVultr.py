@@ -5,9 +5,11 @@
 
 import pprint
 import json
+import random
 
 from cloudinit import log as logging
 from cloudinit import net as cloudnet
+from cloudinit.net.dhcp import EphemeralDHCPv4
 from cloudinit import sources
 from cloudinit import util
 from cloudinit import url_helper
@@ -40,9 +42,10 @@ class DataSourceVultr(sources.DataSource):
         self._network_config = None
 
     def _get_data(self):
-        response = url_helper.readurl(self.metadata_address, timeout=self.timeout,
-                                      sec_between=self.wait_retry,
-                                      retries=self.retries)
+        with EphemeralDHCPv4(get_first_physical_interface()):
+            response = url_helper.readurl(self.metadata_address, timeout=self.timeout,
+                                          sec_between=self.wait_retry,
+                                          retries=self.retries)
         if not response.ok():
             raise RuntimeError("unable to read metadata at %s" % self.metadata_address)
 
@@ -138,6 +141,13 @@ class DataSourceVultr(sources.DataSource):
         config.append({'type': 'nameserver', 'address': self.dns_servers})
 
         return {'version': 1, 'config': config}
+
+
+def get_first_physical_interface():
+    devs = [f for f in cloudnet.get_devicelist() if cloudnet.is_physical(f)]
+    if not devs:
+        raise RuntimeError("No interfaces find to configure link-local address")
+    return min(devs, key=lambda d: cloudnet.read_sys_net_int(d, 'ifindex'))
 
 # Used to match classes to dependencies
 datasources = [
